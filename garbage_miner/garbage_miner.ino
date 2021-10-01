@@ -188,7 +188,7 @@ uint16_t gemsCollected = 0;
 uint8_t sysState = game;
 uint8_t dirtSound = 100;
 
-char *cP;         //Pointer to character data
+uint8_t *cP;         //Pointer to character data
 
 //RGB LED variables
 uint8_t red = 51;
@@ -1182,6 +1182,7 @@ void gameLoop() {			//The main game loop
 
 	if (debug & 1) {								//Draw debugger display?
 		drawNumberMenu(gemsCollected, 0);
+    drawNumberMenu(cpuLoad(), 7);
 		drawNumberMenu(playerState, 15);
 		scrollTiles(7);
 		sendMenuLine();
@@ -2103,7 +2104,7 @@ void canSlimeGrow(uint8_t x, uint8_t y) {		//See if any cells above, below or to
 		}
 	}
 	
-	return count;
+	return; // count;
 
 }
 
