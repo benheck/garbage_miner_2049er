@@ -1,8 +1,8 @@
+//Garbage Miner 2049 (2018-2021) Ben Heck
+
 #include <Arduboy2Core.h>
-#include "ArduboyBeep.h" // (local) "beep" classes
 #include <EEPROM.h>
 
-BeepPin2 beep; // class instance for speaker pin 1
 Arduboy2Core a;
 
 #define menu 			0		//Game states
@@ -47,12 +47,12 @@ Arduboy2Core a;
 
 #define pushPower 		5				//How many reps to push a boulder
 
-uint8_t level = 1;						//Which game level we are on
+uint8_t level;						//Which game level we are on
 uint8_t lives;						//How many men are left
 uint32_t score;						//Player score
 
 //Level pointer offset:    1,   2,   3,   4,   5,   6,   7,   8,   9,   10,  11,  xx  	
-uint16_t levelSize[] = {0, 527, 510, 621, 550, 309, 606, 529, 65535};	//Relative offset pointers to start of flash memory for all levels (use level-1 for this because of zero offset) 65535 = end of level data
+uint16_t levelSize[] = {0, 527, 510, 621, 550, 309, 606, 529, 376, 65535};	//Relative offset pointers to start of flash memory for all levels (use level-1 for this because of zero offset) 65535 = end of level data
 
 const uint8_t levelData[] PROGMEM = {    //The built-in levels data
 
@@ -116,7 +116,14 @@ const uint8_t levelData[] PROGMEM = {    //The built-in levels data
 0x12, 0x63, 0xC1, 0x41, 0x93, 0x11, 0x2, 0x12, 0x6D, 
 //Data pointer:529
 
-//Level 8 data:
+//Level 8 data: (Gas chase, crawlers and seekers) - WIP
+0x3C, 0x0, 0x46, 0x0, 0x0, 0x0, 0x0, 0x0, 
+0xA, 0x41, 0x13, 0x4, 0x51, 0x64, 0x41, 0x1, 0xC1, 0x11, 0x2, 0x16, 0x71, 0x13, 0x62, 0x12, 0x5, 0x41, 0x2, 0x41, 0x4, 0x41, 0x13, 0x3, 0x41, 0x51, 0x11, 0x63, 0x41, 0x2, 0x11, 0x2, 0x1A, 0x62, 0x12, 0x5, 0x41, 0x2, 0x41, 0x4, 0x41, 0x13, 0x3, 0x41, 0x51, 0x11, 0x63, 0x41, 0x2, 0x11, 0x1, 0xC1, 0x1A, 0x62, 0x12, 0x5, 0x41, 0x2, 0x41, 0x4, 0x41, 0x13, 0x3, 0x41, 0x51, 0x11, 0x63, 0x41, 0x2, 0x11, 0x2, 0x1A, 0x62, 0x15, 0x5, 0x41, 0x4, 0x41, 0x13, 0x3, 0x41, 0x51, 0x11, 0x62, 0xC1, 0x41, 0x2, 0x11, 0x2, 0x16, 0x6B, 0x5, 0x41, 0x4, 0x51, 0x6, 0x41, 0x51, 0x12, 0x52, 0x41, 0x2, 0x11, 0x2, 0x16, 0x6A, 0xC1, 0x2, 0x41, 0x7, 0x41, 0x6, 0x41, 0x51, 0x12, 0x52, 0x41, 0x2, 0x11, 0x2, 0x16, 0x63, 0x58, 0x2, 0x41, 0x7, 0x41, 0x13, 
+0x3, 0x41, 0x51, 0x12, 0x52, 0x41, 0x2, 0x11, 0x2, 0x16, 0xC1, 0x61, 0x59, 0x2, 0x41, 0x92, 0x41, 0x4, 0x41, 0x13, 0x3, 0x41, 0x51, 0x42, 0x52, 0x41, 0x2, 0x11, 0x1, 0xC1, 0x5F, 0x52, 0x2, 0x41, 0x12, 0x41, 0x4, 0x41, 0x13, 0x3, 0x11, 0x51, 0x14, 0x2, 0xC1, 0x5E, 0x16, 0x2, 0x41, 0x12, 0x41, 0x4, 0x41, 0x13, 0x4, 0x11, 0x3, 0x59, 0x1F, 0x2, 0x41, 0x11, 0x91, 0x41, 0x4, 0x41, 0x17, 0x71, 0x2, 0x59, 0x1F, 0x11, 0x2, 0x41, 0x12, 0x4F, 0x4F, 0x4B, 0x2, 0x41, 0x6, 0x41, 0x57, 0x41, 0x9, 0x51, 0x17, 0x1, 0x81, 0x19, 0x2, 0x41, 0x3, 0x93, 0x42, 0x55, 0x41, 0x11, 0x68, 0x51, 0x71, 0x51, 0x5, 0x11, 0x2, 0x19, 0x2, 0x41, 0x1, 0x95, 0x51, 0x1, 0x41, 0x53, 0x41, 0x12, 0x68, 0x13, 0x5, 0x11, 0x2, 0x19, 0x2, 0x48, 0x1, 0x41, 0x52, 0x41, 
+0x51, 0x12, 0x68, 0x11, 0x1, 0x42, 0x12, 0x2, 0x11, 0x2, 0x19, 0xB, 0x52, 0x41, 0x52, 0x12, 0x68, 0x11, 0x1, 0x11, 0x41, 0x12, 0x2, 0x11, 0x2, 0x19, 0xB, 0x12, 0x41, 0x14, 0x68, 0x11, 0x1, 0x11, 0x41, 0x12, 0x2, 0x11, 0x2, 0x19, 0xF, 0x21, 0x42, 0xC1, 0x69, 0x11, 0x41, 0x12, 0x2, 0x11, 0x2, 0x19, 0x4F, 0x43, 0x1B, 0x41, 0x1F, 0x1F, 0x13, 0x4D, 0x1F, 0x11, 0xF, 0xF, 0x3, 0x1F, 0x1F, 0x4F, 0x4E, 0x1F, 0x1F, 0x1F, 0x1F, 0x1D, 0xB, 0x1F, 0x1F, 0x15, 0xB, 0x1F, 0x1F, 0x15, 0x2, 0x43, 0x51, 0x43, 0x2, 0x1F, 0x1F, 0x15, 0x2, 0x41, 0x11, 0x1, 0x11, 0x1, 0x11, 0x41, 0x2, 0x1F, 0x1F, 0x15, 0x2, 0x51, 0x11, 0x1, 0x31, 0x1, 0x11, 0x51, 0x2, 0x18, 
+//Data pointer:376
+
+
 
 
 };
@@ -162,7 +169,7 @@ const uint8_t title[] PROGMEM = {
 
 //Arduboy system specific variables
 uint16_t frameCount;
-uint8_t eachFrameMillis;
+#define eachFrameMillis			16		//Static framerate 60 FPS
 unsigned long lastFrameStart;
 unsigned long nextFrameStart;
 bool justRendered;
@@ -173,10 +180,10 @@ uint8_t tileMap[48][32];                         //1 byte per tile, (2) screens 
 uint8_t scratch[16];			//Scratch line of RAM. Used for the edit menu and status bar (when active)
 
 //Player movement and positioning
-int8_t winX = 0;              //X window position
-int8_t winY = 0;              //Y window position
-int8_t winXFine = 0;
-int8_t winYFine = 0; 
+int8_t winX;              //X window position
+int8_t winY;              //Y window position
+int8_t winXFine;
+int8_t winYFine; 
 uint8_t scrollLeft = 0;
 uint8_t scrollRight = 0;
 uint8_t scrollUp = 0;
@@ -186,8 +193,6 @@ uint8_t doorX;					//XY position of exit door
 uint8_t doorY;
 uint8_t manStartX;				//XY position of where man starts
 uint8_t manStartY;
-uint8_t x;						//General-purpose X Y registers
-uint8_t y;
 uint8_t	scanX;
 uint8_t	scanY;
 
@@ -210,32 +215,30 @@ uint16_t ePoint;				//Current pointer for EEPROM access. Must start at 16 or hig
 uint8_t eeByte;					//Used for sending bytes to and fro EEPROM
 uint8_t *ringPt[8];				//Pointer to the bytes that surround the current tile we're evaluating
 uint8_t eventCounter = 0;       //When to trigger events such as player movement and world physics
-uint8_t aniPointer = 0;			//Pointer for current block of tile animation. 40 byte increments, max 120 (160 trigger reset back to 0)
-uint8_t rollToggle = 0;			//Which way balls should roll off each other this frame
+uint8_t aniPointer;				//Pointer for current block of tile animation. 40 byte increments, max 120 (160 trigger reset back to 0)
+uint8_t rollToggle;				//Which way balls should roll off each other this frame
 
+uint8_t dPadBounce = 0;		
 uint8_t debounce = 0;
 
 //World object variables
 uint8_t slimeTimer = 0;			//How many slime tiles 
 uint8_t slimeGrow = 250;		//How fast slime expands (lower = faster)
 uint8_t slimeExpand = 0;		//When slime expands, on which side?
-uint16_t gemsNeeded = 50;
+uint16_t gemsNeeded = 50;		//How many to open door
 uint16_t gemsCollected = 0;
 uint16_t gemsTotal;				//Total # of gems in map. Is counted on decompress. Can go up when monsters turned into diamonds
 
 uint8_t sysState = game;
-uint8_t dirtSound = 100;
+uint8_t dirtSound;
 
-uint8_t *cP;         //Pointer to character data
+uint8_t *cP;         			//Pointer to character data
 
 //RGB LED variables
 uint8_t red = 51;
 uint8_t colorFrame = 0;
 uint8_t flash = 0;
-
-uint8_t dPadBounceEnable = 0xFC;		//At the start all buttons require re-trigger
-uint8_t dPadBounce = 0;			
-
+	
 //Editor variables
 int8_t tilePlace = 0;			//The tile to place
 uint8_t tileBackup;				//The tile we're hovering over
@@ -247,22 +250,38 @@ uint8_t itemsPerLine = 0;
 uint16_t totalCount = 0;		//How many bytes of level data were written to the record (includes the 16 byte header)
 uint8_t arrows[2];
 
+uint16_t tonePitch;
+uint16_t toneTimer = 0;
+uint8_t tonePriority = 0;		//10 = highest (sfx) 0 = lowest (music) -1 off
+int8_t toneDir;
+
 void setup() {
 	
 	Serial.begin(115200);
 
-	a.boot();
-	eachFrameMillis = 16;     //a.setFrameRate(60);  
-	beep.begin(); 				// initialise the hardware
+	a.boot();				//Arduboy framework
 
-
+	//eachFrameMillis = 16;     //a.setFrameRate(60);  
+	
+	//Setup "beep2" pin
+	TCCR4A = 0; 				// normal mode. Disable PWM
+	TCCR4B = 0b00000100;
+	TCCR4D = 0; 				// normal mode
+	TC4H = 0;  					// toggle pin at count = 0
+	OCR4A = 0; 					//  "
+  
+	// Timer0 is already used for millis() - we'll just interrupt somewhere - Adafruit example
+	// in the middle and call the "Compare A" function below
+	OCR0A = 0xAF;
+	TIMSK0 |= _BV(OCIE0A);
+  
 	pinMode(RED_LED, 1);				//PB6
 	pinMode(GREEN_LED, 1);			//PB7
 	pinMode(BLUE_LED, 1);				//PB5
 
-	eventCounter = 0;
+	//eventCounter = 0;
 
-	walls();
+	//walls();
 
 	menuSetup();			//Start in the Menu state
 	
@@ -274,7 +293,7 @@ void loop() {
     return;
   } 
 
-  beep.timer(); // handle tone duration  
+  //beep.timer(); // handle tone duration  
 	
 	switch(sysState) {
 	
@@ -298,13 +317,32 @@ void loop() {
 
 }
 
+void tone(uint16_t thePitch, uint16_t theTime, uint8_t newPriority, int direction) {
+
+	if (newPriority < tonePriority) {					//A "more important" sound is playing? (some sounds are more equal than others)
+		return;											//Abort
+	}
+
+	toneDir = direction;	
+	tonePriority = newPriority;						//Playing? Set as new priority
+
+	TCCR4A = bit(COM4A0); 								// set toggle on compare mode (which connects the pin)
+	TC4H = highByte(thePitch); 							// load the count (10 bits),
+	OCR4C = lowByte(thePitch); 							//  which determines the frequency
+  
+	tonePitch = thePitch;
+	toneTimer = theTime;	
+	
+}
+
 void menuSetup() {
 
 	fill(0);
 	
-	text(2,1, "GO LEVEL -00-");
-	text(3,2, "ROGUELIKE");
-	text(4,3, "EDITOR");
+	text(0,0, "2021 BY BEN HECK");
+	
+	text(2,2, "GO LEVEL");
+	text(2,3, "EDITOR");
 
 	menuSelect = 0;			//Starts with Option #1
 
@@ -314,11 +352,11 @@ void menuSetup() {
 	winY = 0;
 	winXFine = 0;
 	winYFine = 0; 	
-	
-	dPadBounceEnable = 0xFC;	//Retrigger debounce on all buttons
-	
+
 	editMode = 0;
 	sysState = menu;
+	
+	level = 1;
 	
 }
 
@@ -339,21 +377,20 @@ void mainMenu() {
 		arrows[1] = ']';		
 	}
 	
-	tileMap[11][1] = arrows[0];
-	tileMap[14][1] = arrows[1];
+	tileMap[11][2] = arrows[0];
+	tileMap[14][2] = arrows[1];
 
 	switch(menuSelect) {
 	
 		case 0:
-			tileMap[0][1] = arrows[1];
-			tileMap[1][2] = 0;		
-			tileMap[2][3] = 0;
+			tileMap[1][2] = arrows[1];
+			tileMap[1][3] = 0;		
 			if (level < 10) {
-				tileMap[12][1] = '0';
-				drawNumberMap(level, 13, 1);
+				tileMap[12][2] = '0';
+				drawNumberMap(level, 13, 2);
 			}
 			else {
-				drawNumberMap(level, 12, 1);	
+				drawNumberMap(level, 12, 2);	
 			}
 			if (dLeft()) {
 				if (--level == 0) {
@@ -373,17 +410,26 @@ void mainMenu() {
 					levelStartSetup();					
 			}
 		break;
-		
+
 		case 1:
-			tileMap[0][1] = 0;
-			tileMap[1][2] = arrows[1];		
-			tileMap[2][3] = 0;			
-		break; 
-		
-		case 2:
-			tileMap[0][1] = 0;
-			tileMap[1][2] = 0;		
-			tileMap[2][3] = arrows[1];
+			tileMap[1][2] = 0;	
+			tileMap[1][3] = arrows[1];
+			/*
+			if (dLeft()) {
+				if (tonePitch > 0) {
+					tonePitch -= 50;
+					tone(tonePitch, 250, 10, 0);
+				}
+			}
+			if (dRight()) {
+				if (tonePitch < 1000) {
+					tonePitch += 50;
+					tone(tonePitch, 250, 10, 0);
+				}
+			}	
+			drawNumberMap(tonePitch, 0, 0);
+			
+			*/
 			if (g) {
 				walls();
 				editSetup(1);
@@ -401,7 +447,7 @@ void mainMenu() {
 		menuSelect--;
 
 		if (menuSelect == 255) {	//Did we roll over below 0?
-			menuSelect = 2;
+			menuSelect = 1;
 		}
 
 	}
@@ -410,7 +456,7 @@ void mainMenu() {
 
 		menuSelect++;
 
-		if (menuSelect == 3) {
+		if (menuSelect == 2) {
 			menuSelect = 0;
 		}
 
@@ -457,8 +503,9 @@ void editLoop() {
 			menuSelect = 10;
 		}
 		
-		beep.tone(beep.freq(100 + (menuSelect * 100)), 20);
-		
+		//beep.tone(beep.freq(100 + (menuSelect * 100)), 20);
+		tone(200 + (menuSelect * 50), 200, 10, 0);
+
 	  }
 	  if (dDown()) {
 		
@@ -467,13 +514,11 @@ void editLoop() {
 			menuSelect = 1;
 		}
 		
-		beep.tone(beep.freq(100 + (menuSelect * 100)), 20);
-		
+		//beep.tone(beep.freq(100 + (menuSelect * 100)), 20);
+		tone(200 + (menuSelect * 50), 200, 10, 0);
 	  }	
 	
-		for (int x = 0 ; x < 16 ; x++) {	//Clear the menu display
-			scratch[x] = 0;
-		}
+		clrScratch();
 
 		if (eventCounter & 0x08) {		//Blink the up/down arrow prompt on lower right		
 			scratch[15] = 94;
@@ -577,8 +622,8 @@ void editLoop() {
 		
 		if (dLeft()) {
 		
-			beep.tone(beep.freq(2000), 10); // 1000Hz for 2 seconds
-			
+			//beep.tone(beep.freq(2000), 10); // 1000Hz for 2 seconds
+			tone(600, 100, 10, 0);
 			switch(menuSelect) {
 			
 				case(1):
@@ -610,8 +655,8 @@ void editLoop() {
 		}
 		if (dRight()) {
 			
-			beep.tone(beep.freq(2500), 10); // 1000Hz for 2 seconds
-
+			//beep.tone(beep.freq(2500), 10); // 1000Hz for 2 seconds
+			tone(500, 100, 10, 0);
 			switch(menuSelect) {
 			
 				case(1):
@@ -629,6 +674,7 @@ void editLoop() {
 					}	
 				break;
 				case(8):
+					
 					if (slimeGrow < 250) {
 						slimeGrow += 10;
 					}									
@@ -877,9 +923,7 @@ void gameSetup() {
 	pX = manStartX;
 	pY = manStartY;
 	
-	for (int x = 0 ; x < 16 ; x++) {
-		scratch[x] = 0;								//Clear scratch RAM
-	}
+	clrScratch();
 	
 	for (int x = 16 ; x < 24 ; x++) {				//Erase man graphics so we can scroll him in later
 		tiles[x] = 0;
@@ -930,302 +974,300 @@ void gameSetup() {
 }
 
 void gameLoop() {			//The main game loop
-	
-	if (flash) {
-		PORTB &= 0x1F;				//White LED flash		
-		if (--flash == 0) {
+
+	if (debug != 0xFF) {	//Not paused? Run logic
+
+		if (flash) {
+			PORTB &= 0x1F;				//White LED flash		
+			if (--flash == 0) {
+				
+				if (gemsCollected >= gemsNeeded) {
+					PORTB &= 0x1F;			//Switch to green right away
+					PORTB |= 0x60;			//Other colors off
+					colorFrame = 0;			
+				}
+				else {
+					ledAllOff();
+				}			
+
+			}
 			
+		}
+		else {
+
 			if (gemsCollected >= gemsNeeded) {
-				PORTB &= 0x1F;			//Switch to green right away
-				PORTB |= 0x60;			//Other colors off
-				colorFrame = 0;			
+				if (++colorFrame == slimeGrow) {	//Turn off the LED's when value reached
+					PORTB ^= (1 << 7);				//Toggle green
+					//PORTB |= (1 << 6);
+					colorFrame = 0;
+				}				
 			}
 			else {
-				ledAllOff();
-			}			
-
+				if (++colorFrame == red) {	//Turn off the LED's when value reached
+					PORTB ^= (1 << 6);				//Toggle red
+					colorFrame = 0;
+				}				
+			}		
 		}
+
+	  switch(eventCounter++) {      //We divide up frame time by 8
+
+		case 1:						//Player movement state
+		  moveGuy();
+		break;
 		
-	}
-	else {
-
-		if (gemsCollected >= gemsNeeded) {
-			if (++colorFrame == slimeGrow) {	//Turn off the LED's when value reached
-				PORTB ^= (1 << 7);				//Toggle green
-				//PORTB |= (1 << 6);
-				colorFrame = 0;
-			}				
-		}
-		else {
-			if (++colorFrame == red) {	//Turn off the LED's when value reached
-				PORTB ^= (1 << 6);				//Toggle red
-				colorFrame = 0;
-			}				
-		}		
-	}
-
-  switch(eventCounter++) {      //We divide up frame time by 8
-
-    case 1:						//Player movement state
-      moveGuy();
-    break;
-	
-	case 2:						//World object animation state
-	
-		for (int x = 0 ; x < 56 ; x++) {				//Copy 40 bytes from flash pointer to tile RAM
-			tiles[48 + x] = pgm_read_byte_near(aniTiles + aniPointer + x);
-		}
-		aniPointer += 56;
+		case 2:						//World object animation state
 		
-		if (aniPointer == 224) { //192) {
-			aniPointer = 0;
-		}
-	
-	break;
-	
-	case 3:						//Man animation state
-	
-		if (manDir) {
-
-			uint8_t manPointer;
-
-			switch(manDir) {
-			
-				case 1:	//Up?
-				
-				if (manFrame == 3) {
-						manPointer = 40;
-				}
-				else {
-					manPointer = 32 + (manFrame << 3);
-				}
-			
-				for (int x = 0 ; x < 8 ; x++) {				//Man just standing there
-					tiles[16 + x] = pgm_read_byte_near(mani + manPointer + x);
-				}
-	
-				break;
-				case 2:	//Down?
-				
-				if (manFrame == 3) {
-						manPointer = 64;
-				}
-				else {
-					manPointer = 56 + (manFrame << 3);
-				}
-			
-				for (int x = 0 ; x < 8 ; x++) {				//Man just standing there
-					tiles[16 + x] = pgm_read_byte_near(mani + manPointer + x);
-				}				
-				
-				break;			
-				case 3:	//Left?
-				
-				if (manFrame == 3) {
-						manPointer = 16;
-				}
-				else {
-					manPointer = 8 + (manFrame << 3);
-				}
-			
-				for (int x = 0 ; x < 8 ; x++) {				//Man just standing there
-					tiles[16 + x] = pgm_read_byte_near(mani + manPointer + (7 - x));		//Mirror the image as we load it in
-				}				
-				
-				break;		
-				case 4:	//Right?
-				
-				if (manFrame == 3) {
-						manPointer = 16;
-				}
-				else {
-					manPointer = 8 + (manFrame << 3);
-				}
-			
-				for (int x = 0 ; x < 8 ; x++) {				//Man just standing there
-					tiles[16 + x] = pgm_read_byte_near(mani + manPointer + x);
-				}					
-				
-				break;		
-				case 5:	//Pushing left?
-				
-				if (manFrame > 2) {
-					manFrame = 0;
-				}
-				
-				manPointer = 80 + (manFrame << 3);
-
-				for (int x = 0 ; x < 8 ; x++) {				//Man just standing there
-					tiles[16 + x] = pgm_read_byte_near(mani + manPointer + (7 - x));		//Mirror the image as we load it in
-				}	
-
-	
-				
-				break;		
-				case 6:	//Pushing right?
-				
-				if (manFrame > 2) {
-					manFrame = 0;
-				}				
-
-				manPointer = 80 + (manFrame << 3);
-
-				for (int x = 0 ; x < 8 ; x++) {				//Man just standing there
-					tiles[16 + x] = pgm_read_byte_near(mani + manPointer + x);
-				}					
-				
-				break;				
-			
+			for (int x = 0 ; x < 56 ; x++) {				//Copy 40 bytes from flash pointer to tile RAM
+				tiles[48 + x] = pgm_read_byte_near(aniTiles + aniPointer + x);
 			}
+			aniPointer += 56;
 			
-			if (++manFrame == 4) {
-				manFrame = 0;
+			if (aniPointer == 224) { //192) {
+				aniPointer = 0;
 			}
 		
-		}
-		else {
+		break;
+		
+		case 3:						//Man animation state
+		
+			if (manDir) {
 
-			switch(playerState) {
-			
-				case 2:
-					for (int x = 0 ; x < 8 ; x++) {				//Man emerges from ground (bitshifting)
-						tiles[16 + x] = pgm_read_byte_near(mani + x) << screenTimer;
-					}	
+				uint8_t manPointer;
 
-					if (--screenTimer == 0) {					//Done emerging? Give player control
-						playerState = 3;
+				switch(manDir) {
+				
+					case 1:	//Up?
+					
+					if (manFrame == 3) {
+							manPointer = 40;
+					}
+					else {
+						manPointer = 32 + (manFrame << 3);
+					}
+				
+					for (int x = 0 ; x < 8 ; x++) {				//Man just standing there
+						tiles[16 + x] = pgm_read_byte_near(mani + manPointer + x);
+					}
+		
+					break;
+					case 2:	//Down?
+					
+					if (manFrame == 3) {
+							manPointer = 64;
+					}
+					else {
+						manPointer = 56 + (manFrame << 3);
+					}
+				
+					for (int x = 0 ; x < 8 ; x++) {				//Man just standing there
+						tiles[16 + x] = pgm_read_byte_near(mani + manPointer + x);
+					}				
+					
+					break;			
+					case 3:	//Left?
+					
+					if (manFrame == 3) {
+							manPointer = 16;
+					}
+					else {
+						manPointer = 8 + (manFrame << 3);
+					}
+				
+					for (int x = 0 ; x < 8 ; x++) {				//Man just standing there
+						tiles[16 + x] = pgm_read_byte_near(mani + manPointer + (7 - x));		//Mirror the image as we load it in
+					}				
+					
+					break;		
+					case 4:	//Right?
+					
+					if (manFrame == 3) {
+							manPointer = 16;
+					}
+					else {
+						manPointer = 8 + (manFrame << 3);
+					}
+				
+					for (int x = 0 ; x < 8 ; x++) {				//Man just standing there
+						tiles[16 + x] = pgm_read_byte_near(mani + manPointer + x);
+					}					
+					
+					break;		
+					case 5:	//Pushing left?
+					
+					if (manFrame > 2) {
 						manFrame = 0;
 					}
-			
-				break;
-		
-				case 3:
+					
+					manPointer = 80 + (manFrame << 3);
 
-					for (int x = 0 ; x < 8 ; x++) {				//Man in active gameplay
-						tiles[16 + x] = pgm_read_byte_near(mani + x);
+					for (int x = 0 ; x < 8 ; x++) {				//Man just standing there
+						tiles[16 + x] = pgm_read_byte_near(mani + manPointer + (7 - x));		//Mirror the image as we load it in
+					}	
+
+		
+					
+					break;		
+					case 6:	//Pushing right?
+					
+					if (manFrame > 2) {
+						manFrame = 0;
+					}				
+
+					manPointer = 80 + (manFrame << 3);
+
+					for (int x = 0 ; x < 8 ; x++) {				//Man just standing there
+						tiles[16 + x] = pgm_read_byte_near(mani + manPointer + x);
 					}					
+					
+					break;				
 				
-				break;
-	
+				}
+				
+				if (++manFrame == 4) {
+					manFrame = 0;
+				}
+			
+			}
+			else {
+
+				switch(playerState) {
+				
+					case 2:
+						for (int x = 0 ; x < 8 ; x++) {				//Man emerges from ground (bitshifting)
+							tiles[16 + x] = pgm_read_byte_near(mani + x) << screenTimer;
+						}	
+
+						if (--screenTimer == 0) {					//Done emerging? Give player control
+							playerState = 3;
+							manFrame = 0;
+						}
+				
+					break;
+			
+					case 3:
+
+						for (int x = 0 ; x < 8 ; x++) {				//Man in active gameplay
+							tiles[16 + x] = pgm_read_byte_near(mani + x);
+						}					
+					
+					break;
+		
+				}
+			
+			}
+
+		break;
+		
+		case 4:						//Door animation state
+		
+			if (playerState == 0) {
+
+				g = 8;
+				
+				if (manFrame == 4) { //Showing the door location? Animate it closing
+							
+					g = 7;
+					
+					manFrame = 0;
+				
+				}	
+				
+				if (manFrame > 6) { //Showing the door location? Animate it closing
+							
+					g = manFrame;
+					
+					manFrame -= 4;
+				
+				}
+				
+				for (int x = 0 ; x < 8 ; x++) {		//Update door graphic in RAM
+					tiles[24 + x] = pgm_read_byte_near(doori + g + x);
+				}
+				
+			}
+			
+			if (gemsCollected >= gemsNeeded and playerState != 5) {		//Ready to exit? (but player hasn't exited yet)
+				
+				g = (screenTimer++ & 1) << 3;		//Blink the graphic
+
+				for (int x = 0 ; x < 8 ; x++) {		//Update door graphic in RAM
+					tiles[24 + x] = pgm_read_byte_near(doori + g + x);
+				}					
+
+			}
+			
+		break;
+
+		case 7:						//Do gravity physics and enemy movement
+		  physics();
+		  eventCounter = 0;
+		break;
+	 
+	  }
+	 
+
+		if (playerState == 0) {				//Showing door?
+
+			if (screenTimer++ == 40) {
+				playerState = 1;
+				tone(1020, 250, 10, 0); 			
 			}
 		
 		}
+		else {
 
-	break;
-	
-	case 4:						//Door animation state
-	
-		if (playerState == 0) {
+			scrollFlag = 0;				//Flag that's set if scrolling happens
 
-			g = 8;
-			
-			if (manFrame == 4) { //Showing the door location? Animate it closing
-						
-				g = 7;
-				
+			if (scrollLeft) {
+				scrollLeft--;
+				scrollFlag = 1;
+				if (--winXFine < 0) {
+				  winXFine += 8;
+				  winX--;
+				}
+			}
+
+			if (scrollRight) {
+				scrollRight--;
+				scrollFlag = 1;
+				if (++winXFine > 7) {
+				  winXFine -= 8;
+				  winX++;
+				}
+			}
+
+			if (scrollUp) {
+				scrollUp--;
+				scrollFlag = 1;
+				if (--winYFine < 0) {
+				  winYFine += 8;
+				  winY--;
+				}
+			}
+
+			if (scrollDown) {
+				scrollDown--;
+				scrollFlag = 1;
+				if (++winYFine > 7) {
+				  winYFine -= 8;
+				  winY++;
+				}
+			}
+
+			if (scrollFlag == 0 and playerState == 1) { //Scrolling map to reveal player, and scrolling is complete?
+
 				manFrame = 0;
-			
-			}	
-			
-			if (manFrame > 6) { //Showing the door location? Animate it closing
-						
-				g = manFrame;
-				
-				manFrame -= 4;
-			
+				playerState = 2;				//Player will now appear from the ground (rise from a grave?)
+				screenTimer = 8;				//Used as a bit shifter
+
 			}
-			
-			for (int x = 0 ; x < 8 ; x++) {		//Update door graphic in RAM
-				tiles[24 + x] = pgm_read_byte_near(doori + g + x);
-			}
-			
-		}
-		
-		if (gemsCollected >= gemsNeeded and playerState != 5) {		//Ready to exit? (but player hasn't exited yet)
-			
-			g = (screenTimer++ & 1) << 3;		//Blink the graphic
-
-			for (int x = 0 ; x < 8 ; x++) {		//Update door graphic in RAM
-				tiles[24 + x] = pgm_read_byte_near(doori + g + x);
-			}					
-
-		}
-		
-	break;
-
-    case 7:						//Do gravity physics and enemy movement
-      physics();
-      eventCounter = 0;
-    break;
- 
-  }
-  
-  if (buttonA()) {				//Toggle the info panel
-    if (++debug == 3) {
-		debug = 0;
-	}
-  }  
-
-	if (playerState == 0) {				//Showing door?
-
-		if (screenTimer++ == 40) {
-			playerState = 1;			
-		}
-	
-	}
-	else {
-
-		scrollFlag = 0;				//Flag that's set if scrolling happens
-
-		if (scrollLeft) {
-			scrollLeft--;
-			scrollFlag = 1;
-			if (--winXFine < 0) {
-			  winXFine += 8;
-			  winX--;
-			}
-		}
-
-		if (scrollRight) {
-			scrollRight--;
-			scrollFlag = 1;
-			if (++winXFine > 7) {
-			  winXFine -= 8;
-			  winX++;
-			}
-		}
-
-		if (scrollUp) {
-			scrollUp--;
-			scrollFlag = 1;
-			if (--winYFine < 0) {
-			  winYFine += 8;
-			  winY--;
-			}
-		}
-
-		if (scrollDown) {
-			scrollDown--;
-			scrollFlag = 1;
-			if (++winYFine > 7) {
-			  winYFine -= 8;
-			  winY++;
-			}
-		}
-
-		if (scrollFlag == 0 and playerState == 1) { //Scrolling map to reveal player, and scrolling is complete?
-
-			manFrame = 0;
-			playerState = 2;				//Player will now appear from the ground (rise from a grave?)
-			screenTimer = 8;				//Used as a bit shifter
 
 		}
 
 	}
 
-	for (int x = 0 ; x < 16 ; x++) {	//Clear the menu display
-		scratch[x] = 0;
-	}
+	clrScratch();
 
 	switch(debug) {
 		case 0:
@@ -1248,23 +1290,31 @@ void gameLoop() {			//The main game loop
 		break;
 		
 		case 2:
-		textMenu(0, "SCORE");
+			textMenu(0, "SCORE");
 			drawNumberMenu(score, 6);
 			scrollTiles(7);
 			sendMenuLine();		
 		break;
 		
+		case 0xFF:
+			textMenu(5, "PAUSED");
+			scrollTiles(7);
+			sendMenuLine();		
+		break;		
 	}
 
 	//Only do this if slime exists
 	slimeExpand++;
 
-	if (pressed(B_BUTTON)) { 
+	if (buttonA()) {				//Toggle the info panel
+		if (++debug == 3) {
+			debug = 0;
+		}
+	}  
 
-		if (editMode) {
-			
-			while(pressed(B_BUTTON)) {}
-
+	if (buttonB()) {
+	
+		if (editMode) {								//Abort test and back to editing
 			stripAttributes();
 			tileMap[pX][pY] = 0;					//Erase current player position	
 			tileMap[manStartX][manStartY] = man;	//Redraw man in original position
@@ -1273,12 +1323,23 @@ void gameLoop() {			//The main game loop
 			//tileMap[manStartX][manStartY] = man;
 			//sysState = edit;			
 		}
-		else {
-			if (playerState == 3) {
-				killGuy();		//Give up!
-			}
-		}
-
+		else {			
+			switch(debug) {
+				case 0:
+					if (playerState == 3) {
+						killGuy();		//Give up!
+					}					
+				break;				
+				case 1:
+				case 2:
+					debug = 0xFF;
+				break;
+				
+				case 0xFF:
+					debug = 1;
+				break;
+			}			
+		}		
 	}
 
 	if (playerState == 4) {		//Player exploded?
@@ -1312,6 +1373,7 @@ void gameLoop() {			//The main game loop
 		}
 					
 	}	
+
 }
 
 void moveGuy() {
@@ -1413,16 +1475,18 @@ int eat(uint8_t x, uint8_t y, uint8_t dir) {            //When moving into a til
 		
 		case dirt1:
 			score++;
-			beep.tone(beep.freq(dirtSound), 5); // 1000Hz for 2 seconds    
-			dirtSound += 100;
-			if (dirtSound > 500) {
-				dirtSound = 200;
+			//beep.tone(beep.freq(dirtSound), 5); // 1000Hz for 2 seconds
+			tone(dirtSound + 900, 50, 2, 0);			
+			dirtSound += 39;
+			if (dirtSound > 123) {
+				dirtSound = 0;
 			}		
 		break;
 		
 		case jem:
 			score += 100;
-			beep.tone(beep.freq(2000), 15); 	// 1000Hz for 2 seconds
+			//beep.tone(beep.freq(2000), 15); 	// 1000Hz for 2 seconds
+			tone(250, 300, 10, 0);
 			gemsCollected++;					//Put "found them all" check here?
 			flash = 6;
 			red -= 1;
@@ -1648,7 +1712,7 @@ void physics() {
       switch(object & 0x0F) {          					 //Mask off the top 4 control bits of current tile to make decisions
 		case(jar):
 			if (object & falling) {						//Is this a falling jar? See if something is under it				
-				if (tileMap[x][y+1]) { 					//If a falling jar hits anything, it breaks into slime
+				if (tileMap[x][y+1] && tileMap[x][y+1] != gas) { 	//If a falling jar hits anything, it breaks into slime
 					explosion(x, y, slime);
 					break;
 				}		
@@ -1678,7 +1742,10 @@ void physics() {
 			  score += 200;
             break;
             case(jem):                    				//Roll off jems and balls same way
-            case(ball):                   				//If possible balls roll off balls
+            case(ball):                   				//If possible balls roll off balls	
+				if (object & falling) {						//Is this a falling jar? See if something is under it				
+					tone(920, 50, 0, 0);				
+				}			
 				tileMap[x][y] &= 0x0F;					//Mask off falling bit. If item rolls left or right this may get re-enabled	
               if (emptyOrGas(x - 1, y) and emptyOrGas(x - 1, y - 1) and emptyOrGas(x + 1, y) and emptyOrGas(x + 1, y + 1)) {		//Ball can roll either way?
                 if (rollToggle & 1) {
@@ -1708,7 +1775,10 @@ void physics() {
               }
 			break;
 			default:									//Landed inert on dirt or wall?		
-				tileMap[x][y] &= 0x0F;					//Mask off falling bit	(if any)
+				if (object & falling) {						//Is this a falling jar? See if something is under it				
+					tone(1020, 50, 0, 0);				
+				}
+				tileMap[x][y] &= 0x0F;					//Mask off falling bit	(if any)			
 			break;
             }
 
@@ -1910,12 +1980,15 @@ void physics() {
         break;
         case(exp1):       					//First frame of explosion?
           tileMap[x][y]++;      			//Advance to next frame
+		  //tone(350, 15, 9, 0);
         break;
         case(exp2):       					//Second frame of explosion?
           tileMap[x][y]++;     				 //Advance to next frame
+		  //tone(200, 15, 9, 0);
         break;
         case(exp3):       					//Final frame of explosion?         
           tileMap[x][y] = object >> 4;    	//Upper nibble says what to leave behind. Can also be nothing
+		  //tone(100, 95, 9, -1);
         break;       
         default:
         break;     
@@ -1930,16 +2003,13 @@ uint8_t dUp() {
 
 	if (pressed(UP_BUTTON)) {		//Pressed? See if bit is set
 
-		if (dPadBounceEnable & upBit) {	//Checking for retriggers?
-			if (dPadBounce & upBit) {		//Bit still set? No dice
-				return 0;
-			}
-			dPadBounce |= upBit;			//Bit clear? Set it
-			return 1;						//and return status		
+
+		if (dPadBounce & upBit) {		//Bit still set? No dice
+			return 0;
 		}
-		else {
-			return 1;
-		}
+		dPadBounce |= upBit;			//Bit clear? Set it
+		return 1;						//and return status		
+
 	}
 	else {
 		dPadBounce &= ~upBit;			//Button not pressed? Clear the bit, allowing a retrigger
@@ -1952,16 +2022,13 @@ uint8_t dDown() {
 
 	if (pressed(DOWN_BUTTON)) {		//Pressed? See if bit is set
 
-		if (dPadBounceEnable & downBit) {	//Checking for retriggers?
-			if (dPadBounce & downBit) {		//Bit still set? No dice
-				return 0;
-			}
-			dPadBounce |= downBit;			//Bit clear? Set it
-			return 1;						//and return status
+
+		if (dPadBounce & downBit) {		//Bit still set? No dice
+			return 0;
 		}
-		else {
-			return 1;
-		}
+		dPadBounce |= downBit;			//Bit clear? Set it
+		return 1;						//and return status
+
 	}
 	else {
 		dPadBounce &= ~downBit;			//Button not pressed? Clear the bit, allowing a retrigger
@@ -1974,16 +2041,14 @@ uint8_t dLeft() {
 
 	if (pressed(LEFT_BUTTON)) {		//Pressed? See if bit is set
 
-		if (dPadBounceEnable & leftBit) {	//Checking for retriggers?
-			if (dPadBounce & leftBit) {		//Bit still set? No dice
-				return 0;
-			}
-			dPadBounce |= leftBit;			//Bit clear? Set it
-			return 1;						//and return status
+
+		if (dPadBounce & leftBit) {		//Bit still set? No dice
+			return 0;
 		}
-		else {
-			return 1;
-		}
+		dPadBounce |= leftBit;			//Bit clear? Set it
+		return 1;						//and return status
+
+
 	}
 	else {
 		dPadBounce &= ~leftBit;			//Button not pressed? Clear the bit, allowing a retrigger
@@ -1995,16 +2060,13 @@ uint8_t dRight() {
 
 	if (pressed(RIGHT_BUTTON)) {		//Pressed? See if bit is set
 
-		if (dPadBounceEnable & rightBit) {	//Checking for retriggers?
-			if (dPadBounce & rightBit) {		//Bit still set? No dice
-				return 0;
-			}
-			dPadBounce |= rightBit;			//Bit clear? Set it
-			return 1;						//and return status
+
+		if (dPadBounce & rightBit) {		//Bit still set? No dice
+			return 0;
 		}
-		else {
-			return 1;
-		}
+		dPadBounce |= rightBit;			//Bit clear? Set it
+		return 1;						//and return status
+
 
 	}
 	else {
@@ -2017,41 +2079,37 @@ uint8_t buttonA() {
 
 	if (pressed(A_BUTTON)) {		//Pressed? See if bit is set
 
-		if (dPadBounceEnable & aBit) {	//Checking for retriggers?
-			if (dPadBounce & aBit) {		//Bit still set? No dice
-				return 0;
-			}
-			dPadBounce |= aBit;			//Bit clear? Set it
-			return 1;						//and return status
+		if (dPadBounce & aBit) {		//Bit still set? No dice
+			return 0;
 		}
-		else {
-			return 1;
-		}
+		dPadBounce |= aBit;			//Bit clear? Set it
+		return 1;						//and return status
+
 	}
 	else {
 		dPadBounce &= ~aBit;			//Button not pressed? Clear the bit, allowing a retrigger
 	}
+	
+	return 0;
 
 }
 
 uint8_t buttonB() {
 
-	if (pressed(B_BUTTON)) {		//Pressed? See if bit is set
-	
-		if (dPadBounceEnable & bBit) {	//Checking for retriggers?
-			if (dPadBounce & bBit) {		//Bit still set? No dice
-				return 0;
-			}
-			dPadBounce |= bBit;			//Bit clear? Set it
-			return 1;						//and return status
+	if (pressed(B_BUTTON)) {		//Pressed? See if bit is set	
+
+		if (dPadBounce & bBit) {		//Bit still set? No dice
+			return 0;
 		}
-		else {
-			return 1;
-		}
+		dPadBounce |= bBit;			//Bit clear? Set it
+		return 1;						//and return status
+
 	}
 	else {
 		dPadBounce &= ~bBit;			//Button not pressed? Clear the bit, allowing a retrigger
 	}
+	
+	return 0;
 
 }
 
@@ -2095,10 +2153,9 @@ void compressLevel() {			//RLE compresses a level using upper nibble for tile # 
 	
 	int reloadFlag = 0;
 	
-
-	for (y = 1 ; y < 31 ; y++) {
+	for (int y = 1 ; y < 31 ; y++) {
 		
-		for (x = 1 ; x < 47 ; x++) {
+		for (int x = 1 ; x < 47 ; x++) {
 			
 			if (reloadFlag) {
 				eeByte = tileMap[x][y];			//Get current tile (start of new block)
@@ -2133,9 +2190,7 @@ void decompressLevel() {		//Decompresses level data from EEPROM or FLASH
 	gemsNeeded = 0;
 	gemsTotal = 0;
 
-	for (int x = 0 ; x < 16 ; x++) {	//Clear the menu display
-		scratch[x] = 0;
-	}	
+	clrScratch();
 
 	tileMap[pX][pY] = tileBackup;
 
@@ -2153,9 +2208,9 @@ void decompressLevel() {		//Decompresses level data from EEPROM or FLASH
 	uint8_t tilesToGo = eeByte & 0x0F;				//Get number of RLE tiles (lower nibble)
 	eeByte >>= 4;									//Bitshift over the upper nibble. This is the tile type
 
-	for (y = 1 ; y < 31 ; y++) {
+	for (int y = 1 ; y < 31 ; y++) {
 		
-		for (x = 1 ; x < 47 ; x++) {
+		for (int x = 1 ; x < 47 ; x++) {
 
 			tileMap[x][y] = eeByte;				//Place current tile on map
 			
@@ -2179,8 +2234,8 @@ void decompressLevel() {		//Decompresses level data from EEPROM or FLASH
 		}	
 	}
 
-	x = 0;
-	y = 0;
+	//x = 0;
+	//y = 0;
 	
 	pX = manStartX;
 	pY = manStartY;
@@ -2272,7 +2327,9 @@ void explosion(uint8_t x, uint8_t y, uint8_t result) {
   if ((result >> 4) == jem) {			//Did a monster explode into JEMS?
 	  gemsTotal += changes;				//Increment the total # of gems in the stage by the change #
   }
-    
+ 
+ tone(900, 500, 9, 3);				
+
 }
 
 int isValid(uint8_t x, uint8_t y) {
@@ -2337,14 +2394,10 @@ void canSlimeGrow(uint8_t x, uint8_t y) {		//See if any cells above, below or to
 				
 		}
 	}
-	
-	return; // count;
 
 }
 
 int canGasGrow(uint8_t x, uint8_t y) {		//See if any cells above, below or to the side of slime are empty for growth
-
-	//int righty = 0;									//If gas grows to the right we set this flag to skip that block in the logic (to prevent runaway growth)
 
 	//Get the pointers of tiles around slime, bottom, left, top and right
 	ringPt[0] = &tileMap[x][y + 1];
@@ -2356,6 +2409,7 @@ int canGasGrow(uint8_t x, uint8_t y) {		//See if any cells above, below or to th
 	
 		if (*ringPt[x] == 0) {						//Cell empty? Gas can expand into it
 			*ringPt[x] = gas;
+			tone(150, 15, 1, -1);
 			if (x > 1) {							//Expanded to top or right?
 				*ringPt[x] |= dontMove;				//Flag bit so this won't expand again on the next row/column scan
 			}		
@@ -2365,32 +2419,8 @@ int canGasGrow(uint8_t x, uint8_t y) {		//See if any cells above, below or to th
 			tileMap[scanX][scanY] = exp1;		//Explosion epicenter
 			explosion(scanX, scanY, 0);
 			score += 10;
-			//righty = 1;
 		}
 	}
-	
-	//return righty;
-
-/*
-
-	int righty = 0;									//If gas grows to the right we set this flag to skip that block in the logic (to prevent runaway growth)
-
-	//Get the pointers of tiles around slime
-	ringPt[0] = &tileMap[x-1][y];
-	ringPt[1] = &tileMap[x][y-1];
-	ringPt[2] = &tileMap[x+1][y];
-	ringPt[3] = &tileMap[x][y+1];
-	
-	for (int x = 0 ; x < 4 ; x++) {					//Check all 4 cardinal directions
-	
-		if (*ringPt[x] == 0) {						//Cell empty? Gas can expand into it
-			*ringPt[x] = gas;	
-		}
-	}
-	
-	return 0 ;//righty; // count;
-
-*/
 
 }
 
@@ -2526,6 +2556,12 @@ void sendMenuLine() {
 	
 }
 
+void clrScratch() {
+
+	memset(scratch, 0, 16);	
+	
+}	
+
 void text(uint8_t xPos, uint8_t yPos, const char *str) {
 
   while (*str) {
@@ -2620,8 +2656,8 @@ bool nextFrame() {
     // frame duration we get due to integer math.
 
     // We should be woken up by timer0 every 1ms, so it's ok to sleep.
-    if ((uint8_t)(nextFrameStart - now) >= 2)
-      a.idle();
+    //if ((uint8_t)(nextFrameStart - now) >= 2)
+     // a.idle();
 
     return false;
   }
@@ -2636,7 +2672,7 @@ bool nextFrame() {
 }
 
 bool pressed(uint8_t buttons) {
-  return (buttonsState() & buttons) == buttons;
+  return (a.buttonsState() & buttons) == buttons;
 }
 
 uint8_t buttonsState() {
@@ -2701,4 +2737,21 @@ void fill(uint8_t withWhat) {
 	
 }
 
+ISR(TIMER0_COMPA_vect) {	// Interrupt is called once a millisecond 
 
+	if (toneTimer) {
+		
+		if (toneDir) {
+			//TCA0.SINGLE.CMP0 += toneDir;
+			tonePitch += toneDir;		
+			TC4H = highByte(tonePitch); // load the count (10 bits),
+			OCR4C = lowByte(tonePitch); //  which determines the frequency		
+		}		
+		
+		if (--toneTimer == 0) {
+			TCCR4A = 0; // set normal mode (which disconnects the pin)
+			tonePriority = 0;						//Priority set to 0 (anything can now play)
+		}
+	}	
+	
+}
