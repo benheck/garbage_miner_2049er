@@ -24,7 +24,7 @@ Arduboy2Core a;
 #define seeker			8
 #define jem				9
 #define slime 			10
-#define monster 		11
+#define amoeba 			11
 #define crawler 		12
 #define isExploding		12
 #define exp1  			13
@@ -35,7 +35,8 @@ Arduboy2Core a;
 #define moveDown  		0x10
 #define moveLeft  		0x20
 #define moveRight 		0x30
-#define dontMove  		0x80				//Change to 0x40?
+#define glued			0x40		//Amoeba is attached to another amoeba
+#define dontMove  		0x80		//Change to 0x40?
 #define falling	  		0x80
 
 #define upBit			0x80		//Bitwise defines for one-shot button presses
@@ -123,8 +124,6 @@ const uint8_t levelData[] PROGMEM = {    //The built-in levels data
 0x12, 0x41, 0x66, 0x2, 0x48, 0x1, 0x41, 0x52, 0x41, 0x51, 0x12, 0x68, 0x11, 0x1, 0x42, 0x12, 0x2, 0x11, 0x51, 0x41, 0x12, 0x41, 0x66, 0xB, 0x52, 0x41, 0x52, 0x12, 0x68, 0x11, 0x1, 0x11, 0x41, 0x12, 0x2, 0x11, 0x51, 0x41, 0x12, 0x41, 0x66, 0x4, 0x43, 0x4, 0x12, 0x41, 0x14, 0x68, 0x11, 0x1, 0x11, 0x41, 0x12, 0x2, 0x11, 0x51, 0x41, 0x12, 0x41, 0x63, 0x41, 0x62, 0x4, 0x41, 0x51, 0x41, 0x9, 0x51, 0x41, 0xC1, 0x69, 0x11, 0x41, 0x12, 0x3, 0x51, 0x41, 0x12, 0x41, 0x63, 0x41, 0x62, 0x45, 0x51, 0x47, 0x54, 0x41, 0x1B, 0x41, 0x12, 0x3, 0x11, 0x3, 0x41, 0x61, 0x71, 0x61, 0x41, 0x62, 0x53, 0x11, 0x1, 0x11, 0x7, 0x54, 0x4F, 0x4C, 0x62, 0x13, 0x2, 0x41, 0x6, 0x11, 0x54, 0x11, 0xF, 0xD, 0x13, 0x1, 0x11, 0x7, 0x16, 0xF, 0xD, 0x63, 0x43, 0x52, 0x4F, 
 0x4F, 0x48, 0x63, 0x51, 0x62, 0x12, 0x62, 0x11, 0x41, 0x63, 0x52, 0xF, 0x6, 0x14, 0x51, 0x3, 0x63, 0x41, 0x66, 0x11, 0x41, 0x56, 0x13, 0x71, 0x51, 0x43, 0xC, 0x13, 0x91, 0x41, 0x3, 0x63, 0x41, 0x66, 0x11, 0x41, 0x57, 0x16, 0x41, 0x51, 0xB, 0x12, 0x92, 0x51, 0x3, 0x63, 0x41, 0x6, 0x14, 0x53, 0x14, 0x91, 0x44, 0x1E, 0x92, 0x41, 0x1, 0x31, 0x1, 0x62, 0xC1, 0x41, 0x1F, 0x12, 0x91, 0x18, 0x8, 0x11, 0x93, 0x51, 0xC1, 0x1, 0xC1, 
 //Data pointer:465
-
-
 
 
 //Level 9 data: (Introduction to Ameobas) - WIP
@@ -1288,7 +1287,7 @@ void gameLoop() {			//The main game loop
 			scratch[cursorX++] = '%';
 			scratch[cursorX++] = '&';		
 			drawNumberMenu(gemsTotal, cursorX);
-			//drawNumberMenu(cpuLoad(), 11);
+			//drawNumberMenu(cpuLoad(), 10);
 			scratch[14] = '*';
 			drawNumberMenu(lives, 15);
 			scrollTiles(7);
@@ -1704,9 +1703,6 @@ int emptyOrGas(uint8_t x, uint8_t y) {
 
 void physics() {
 
-	uint8_t xt;											//Temp target value
-	uint8_t yt;
-
   for (int x = 1 ; x < 47 ; x++) {        				//Don't check the physics of the outer walls (sub 1 on all sides)
 
     for (int y = 30 ; y > 0 ; y--) {
@@ -1740,10 +1736,13 @@ void physics() {
 				if (object & falling) {					//The item must be falling for this to happen. If it spawns simply sitting above jar no explosion
 					killGuy();
 				}
-			break;			
+			break;	
+            case(amoeba): 								//Squish an amoeba? It makes MOAR amoebas!         				
+              explosion(x, y + 1, amoeba);
+			  score += 600;	
+			break;
 			case(seeker):
-			case(crawler):
-            case(monster):                				//Did we land on a monster? Blow it up! (explosion centered on monster)
+			case(crawler):								//Did we land on a monster? Blow it up! (explosion centered on monster)	
               explosion(x, y + 1, jem);
 			  score += 200;
             break;
@@ -1923,86 +1922,75 @@ void physics() {
 		}
         break;
 
-        case(monster):
+        case(amoeba):
 		
-			if (radialCheck(x, y, slime)) {
-				explosion(x, y, jem);
+			if (radialCheck(x, y, seeker)) {				//Amoeba touches creature, evolves into it
+				tileMap[x][y] = exp1 | (seeker << 4);
 				break;
 			}
 			
+			if (radialCheck(x, y, crawler)) {				//Amoeba touches creature, evolves into it
+				tileMap[x][y] = exp1 | (crawler << 4);
+				break;
+			}	
+			
 			if (radialCheck(x, y, man)) {
-				if (killGuy()) {				//If player can be killed, abort all other checks
-					break;
-				}
-			}			
-		
-          if (object & dontMove) {          //Was this monster moved up in a previous lower row scan?
-            tileMap[x][y] &= 0x7F;                 //Remove the bit and BREAK out to move onto next tile
-          }
-          else {                             //Normal operation check for available movement
-           switch(object & 0xF0) {           //Mask off everything but the 2 bit direction indicator (UDLR)
-
-            case(moveUp):                    //Up?
-              if (tileMap[x][y-1] != 0) {    //Can't go up?
-                tileMap[x][y] = monster | (random(4) << 4);
-              }
-              else {                        //Else move up
-                tileMap[x][y] = 0;
-                tileMap[x][y-1] = object | dontMove;            //Add the Don't Move bit so this object won't get moved when the row above is scanned
-              }
-            break;
-            case(moveDown):                  //Down?
-              if (tileMap[x][y+1] != 0) {   //Can't go down?
-                tileMap[x][y] = monster | (random(4) << 4);
-              }
-              else {                        //Else move down
-                tileMap[x][y] = 0;
-                tileMap[x][y+1] = object;
-              }
-            break;
-            case(moveLeft):                 //Left?
-              if (tileMap[x-1][y] != 0) {   //Can't go left?
-                object &= 0x0F;
-                tileMap[x][y] = monster | (random(4) << 4);
-              }
-              else {                        //Else move left
-                tileMap[x][y] = 0;
-                tileMap[x-1][y] = object;
-              }
-            break;
-            case(moveRight):                //Right?
-              if (tileMap[x+1][y] != 0) {   //Can't go right?
-                object &= 0x0F;
-                tileMap[x][y] = monster | (random(4) << 4);
-              }
-              else {                        //Else move right
-                tileMap[x][y] = 0;
-                tileMap[x+1][y] = object;
-                x++;						//Increment X pointer so we don't immediately move it again on the next column check
-              }
-            break;
+				killGuy();
+				break;
 			}
-          }           
+
+			if (object & dontMove) {          //Was this monster moved up in a previous lower row scan?
+				tileMap[x][y] &= 0x7F;         //Remove the bit and BREAK out to move onto next tile
+			}
+			else {
+
+				if (random(6) > 2) {
+
+					switch(random(4)) {           			//Mask off everything but the 2 bit direction indicator (UDLR)
+
+						case(0):                    //Up?
+						  if (!tileMap[x][y-1]) {    //Can go up?
+							tileMap[x][y] = 0;
+							tileMap[x][y-1] = object | dontMove;            //Add the Don't Move bit so this object won't get moved when the row above is scanned
+						  }
+						break;
+						case(1):                  	//Down?
+						  if (!tileMap[x][y+1]) {   //Can go down?
+							tileMap[x][y] = 0;
+							tileMap[x][y+1] = object;
+						  }
+						break;
+						case(2):                 	//Left?
+						  if (!tileMap[x-1][y]) {   //Can go left?
+							tileMap[x][y] = 0;
+							tileMap[x-1][y] = object;
+						  }
+						break;
+						case(3):                	//Right?
+						  if (!tileMap[x+1][y]) {   //Can go right?
+							tileMap[x][y] = 0;
+							tileMap[x+1][y] = object;
+							x++;						//Increment X pointer so we don't immediately move it again on the next column check
+						  }
+						break;
+						
+					}					
+				}
+			}   
         break;
         case(exp1):       					//First frame of explosion?
           tileMap[x][y]++;      			//Advance to next frame
-		  //tone(350, 15, 9, 0);
         break;
         case(exp2):       					//Second frame of explosion?
           tileMap[x][y]++;     				 //Advance to next frame
-		  //tone(200, 15, 9, 0);
         break;
         case(exp3):       					//Final frame of explosion?         
           tileMap[x][y] = object >> 4;    	//Upper nibble says what to leave behind. Can also be nothing
-		  //tone(100, 95, 9, -1);
-        break;       
-        default:
-        break;     
+        break;          
       } 
     }
   }
   	  
-  
 }
 
 uint8_t dUp() {
@@ -2358,22 +2346,29 @@ int isValid(uint8_t x, uint8_t y) {
 
 int radialCheck(uint8_t x, uint8_t y, uint8_t lookFor) {       //Checks if indicated tile appears next to current tile
 
-	if (tileMap[x-1][y] == lookFor) {
+	if (getObjectOnly(x - 1, y) == lookFor) {
 		return 1;
 	}
-	if (tileMap[x][y-1] == lookFor) {
+	if (getObjectOnly(x, y - 1) == lookFor) {
 		return 1;
 	}
-	if (tileMap[x+1][y] == lookFor) {
+	if (getObjectOnly(x + 1, y) == lookFor) {
 		return 1;
 	}	
-	if (tileMap[x][y+1] == lookFor) {
+	if (getObjectOnly(x, y + 1) == lookFor) {
 		return 1;
 	}	
 
 	return 0;
 
 }
+
+uint8_t getObjectOnly(uint8_t x, uint8_t y) {
+	
+	return tileMap[x][y] & 0x0F;
+	
+}	
+
 
 void canSlimeGrow(uint8_t x, uint8_t y) {		//See if any cells above, below or to the side of slime are empty for growth
 
